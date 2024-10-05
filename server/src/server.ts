@@ -141,7 +141,7 @@ connection.languages.diagnostics.on(async (params) => {
 	if (document !== undefined) {
 		return {
 			kind: DocumentDiagnosticReportKind.Full,
-			items: await validateTextDocument(document)
+			items: await validateSCSSDocument(document)
 		} satisfies DocumentDiagnosticReport;
 	} else {
 		// We don't know the document. We can either try to read it from disk
@@ -156,16 +156,39 @@ connection.languages.diagnostics.on(async (params) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	validateTextDocument(change.document);
+	validateSCSSDocument(change.document);
 });
 
-async function validateTextDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
+function createPattern() {
+	const cssVars = [
+		"react-bedrock-theme-palette-primary-main",
+		"react-bedrock-theme-palette-secondary-main"
+	];
+
+	const parenthCssVars = new Array<string>();
+	
+	cssVars.forEach((cssVar) => {
+		parenthCssVars.push(`(${cssVar})`);
+	});
+
+	const patternPreFix = "react-bedrock-[a-zA-Z-]*(?<!";
+	const patternSuffix = ")(?![a-zA-Z-])";
+
+	const cssVarMatch = parenthCssVars.join("|");
+
+	const pattern = patternPreFix + cssVarMatch + patternSuffix;
+	
+	return pattern;
+}
+
+async function validateSCSSDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
 	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
 
 	// The validator creates diagnostics for all uppercase words length 2 and more
 	const text = textDocument.getText();
-	const pattern = /\b[A-Z]{2,}\b/g;
+	
+	const pattern = new RegExp(createPattern(), "g");
 	let m: RegExpExecArray | null;
 
 	let problems = 0;
@@ -173,13 +196,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
 		problems++;
 		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
+			severity: DiagnosticSeverity.Error,
 			range: {
 				start: textDocument.positionAt(m.index),
 				end: textDocument.positionAt(m.index + m[0].length)
 			},
-			message: `${m[0]} is all uppercase.`,
-			source: 'ex'
+			message: `'${m[0]}' is not a valid react-bedrock css class.`,
+			source: 'React Bedrock Intellisense'
 		};
 		if (hasDiagnosticRelatedInformationCapability) {
 			diagnostic.relatedInformation = [
@@ -188,14 +211,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 						uri: textDocument.uri,
 						range: Object.assign({}, diagnostic.range)
 					},
-					message: 'Spelling matters'
-				},
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Particularly for names'
+					message: 'Invalid Class Name'
 				}
 			];
 		}
