@@ -171,8 +171,8 @@ function createPattern() {
 		parenthCssVars.push(`(${cssVar})`);
 	});
 
-	const patternPreFix = "react-bedrock-[a-zA-Z-]*(?<!";
-	const patternSuffix = ")(?![a-zA-Z-])";
+	const patternPreFix = "react-bedrock-[a-zA-Z-]*(?![a-zA-Z-])(?<!";
+	const patternSuffix = ")";
 
 	const cssVarMatch = parenthCssVars.join("|");
 
