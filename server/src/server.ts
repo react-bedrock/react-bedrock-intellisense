@@ -24,8 +24,8 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 const cssVars = [
-	"react-bedrock-theme-palette-primary-main",
-	"react-bedrock-theme-palette-secondary-main"
+	"--react-bedrock-theme-palette-primary-main",
+	"--react-bedrock-theme-palette-secondary-main"
 ];
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -233,17 +233,14 @@ connection.onCompletion(
     // info and always provide the same completion items.
 
 		let index = 1;
-		const completionArray = new Array<CompletionItem>();
 
-		cssVars.forEach(cssVar => {
-			completionArray.push({
-				label: cssVar,
-				kind: CompletionItemKind.Text,
-				data: index++
-			});
-		});
+		const completionArray: Array<CompletionItem> = cssVars.map((v) => ({
+			label: v,
+			kind: CompletionItemKind.Variable,
+			data: index++
+		}));
 
-    return completionArray;
+		return completionArray;
   }
 );
 
